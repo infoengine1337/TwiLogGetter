@@ -32,7 +32,7 @@ async def fetch_log_per_month(userid, yearmonth):
         lasttwtime = "-1"
         while True:
             async with session.get(URL, params={"user_id":userid,"date":yearmonth_str,"flag":lasttwtime} ) as response:
-                oldtws = await response.json()
+                oldtws = json.loads(await response.text())
                 if not oldtws["data"]:
                     print("There is No Tweet in this month...")
                     break
@@ -58,14 +58,13 @@ async def main():
     name = input("Please Enter Twitter screenname:")
 
     id, createdate = name2id(name)
-    #print("{} / {}".format(id,createdate))
 
     createdate_obj = datetime.strptime(createdate,'%Y/%m/%d')
     nowdate_obj = datetime.now()
 
     tasks_list = []
     for aimdate in month_span(nowdate_obj,createdate_obj):
-        tasks_list.append(asyncio.create_task(fetch_log_per_month(name, aimdate)))
+        tasks_list.append(asyncio.create_task(fetch_log_per_month(id, aimdate)))
         
     returnval_lists = await asyncio.gather(*tasks_list)
 
