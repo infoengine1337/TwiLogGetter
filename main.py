@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime,timedelta
 from dateutil.relativedelta import relativedelta
-import pprint
+import pickle
 
 def month_span(begindate_obj, enddate_obj):
     yield begindate_obj
@@ -26,7 +26,7 @@ async def fetch_log_per_month(userid, yearmonth):
     log_result = []
 
     yearmonth_str = yearmonth.strftime('%Y%m')
-    print(yearmonth_str)
+    print(yearmonth_str,end=' ')
 
     async with aiohttp.ClientSession() as session:
         lasttwtime = "-1"
@@ -34,19 +34,19 @@ async def fetch_log_per_month(userid, yearmonth):
             async with session.get(URL, params={"user_id":userid,"date":yearmonth_str,"flag":lasttwtime} ) as response:
                 oldtws = json.loads(await response.text())
                 if not oldtws["data"]:
-                    print("There is No Tweet in this month...")
+                    print("There is No Tweet in {}...".format(yearmonth_str))
                     break
                 else:
                     for oldtw in oldtws["data"]:
 
                         log_result.append({"month": yearmonth_str, "text": oldtw["text"].replace("\n",""), "created_at": oldtw["created_at"]})
-                        #pprint.pprint({"month": yearmonth_str, "text": oldtw["text"].replace("\n",""), "created_at": oldtw["created_at"]})
-
+                        
                         lasttwtime = oldtw["id"]
 
                 if len(oldtws["data"]) < 15:
-                    print("Tweet in this month is ended.")
+                    print("Tweet in {} is ended.".format(yearmonth_str))
                     break
+
         return log_result
                 
 
@@ -58,19 +58,23 @@ async def main():
     name = input("Please Enter Twitter screenname:")
 
     id, createdate = name2id(name)
+    print("User {} -> {}".format(name, id))
 
-    createdate_obj = datetime.strptime(createdate,'%Y/%m/%d')
-    nowdate_obj = datetime.now()
+    createdate_obj, nowdate_obj = datetime.strptime(createdate,'%Y/%m/%d'), datetime.now()
 
     tasks_list = []
     for aimdate in month_span(nowdate_obj,createdate_obj):
+
         tasks_list.append(asyncio.create_task(fetch_log_per_month(id, aimdate)))
         
     returnval_lists = await asyncio.gather(*tasks_list)
 
     print(returnval_lists)
 
-    #with open("{}.csv".format(name), 'w', encoding='utf-8') as f:
+    with open("{}.pkl".format(name), 'wb') as file:
+        pickle.dump(returnval_lists, file)
+
+    print("Succeed.")
         
 
 if __name__ == '__main__':
