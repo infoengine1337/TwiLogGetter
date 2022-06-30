@@ -32,7 +32,7 @@ async def fetch_log_per_month(userid, yearmonth):
         lasttwtime = "-1"
         while True:
             async with session.get(URL, params={"user_id":userid,"date":yearmonth_str,"flag":lasttwtime} ) as response:
-                oldtws = response.json()
+                oldtws = await response.json()
                 if not oldtws["data"]:
                     print("There is No Tweet in this month...")
                     break
